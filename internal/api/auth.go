@@ -9,6 +9,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
+	"google.golang.org/api/option"
 	"google.golang.org/api/tasks/v1"
 )
 
@@ -56,4 +57,25 @@ func (g *GoogleAuth) SaveToken(file string, token *oauth2.Token) {
 	}
 	defer f.Close()
 	json.NewEncoder(f).Encode(token)
+}
+
+func (g *GoogleAuth) LoadToken(file string) (*oauth2.Token, error) {
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var token oauth2.Token
+	err = json.NewDecoder(f).Decode(&token)
+	return &token, err
+}
+
+func (g *GoogleAuth) GetService() *tasks.Service {
+	client := g.Config.Client(context.Background(), g.Token)
+	service, err := tasks.NewService(context.Background(), option.WithHTTPClient(client))
+	if err != nil {
+		log.Fatalf("Unable to create tasks service: %v", err)
+	}
+	return service
 }
