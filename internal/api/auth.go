@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -46,4 +47,13 @@ func (g *GoogleAuth) GetTokenFromWeb() *oauth2.Token {
 	}
 
 	return token
+}
+
+func (g *GoogleAuth) SaveToken(file string, token *oauth2.Token) {
+	f, err := os.Create(file)
+	if err != nil {
+		log.Fatalf("Failed to save token to file %v", err)
+	}
+	defer f.Close()
+	json.NewEncoder(f).Encode(token)
 }
