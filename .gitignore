@@ -1,0 +1,20 @@
+# Binaries
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Secrets
+config/client_secret.json
+config/token.json
+
+# Logs
+*.log
+
+.idea/
+.vscode/
+*.swp
+
+.DS_Store
+Thumbs.db
