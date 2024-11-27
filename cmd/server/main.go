@@ -1,12 +1,12 @@
 package main
 
 import (
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/bmolinari/google-tasks-widget/internal/api"
+	"github.com/bmolinari/google-tasks-widget/internal/handlers"
 	"google.golang.org/api/tasks/v1"
 )
 
@@ -24,10 +24,11 @@ func main() {
 	auth.Token = token
 
 	taskService = auth.GetService()
+	taskHandler := handlers.TaskHandler{TaskService: taskService}
 
-	http.HandleFunc("/tasks", handleGetTasks)
-	http.HandleFunc("/tasks/create", handleCreateTask)
-	http.HandleFunc("/tasks/complete", handleCompleteTask)
+	http.HandleFunc("/tasks", taskHandler.GetTasks)
+	http.HandleFunc("/tasks/create", taskHandler.CreateTask)
+	http.HandleFunc("/tasks/complete", taskHandler.CompleteTask)
 
 	port := getServerPort()
 	log.Println("Server is running on http://localhost:8080")
@@ -40,58 +41,4 @@ func getServerPort() string {
 		port = "8080"
 	}
 	return port
-}
-
-func handleGetTasks(w http.ResponseWriter, r *http.Request) {
-	taskList, err := taskService.Tasks.List("@default").Do()
-	if err != nil {
-		http.Error(w, "Failed to fetch tasks", http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(taskList.Items)
-}
-
-func handleCreateTask(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		Title string `json:"title"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	task := &tasks.Task{Title: req.Title}
-	_, err := taskService.Tasks.Insert("@default", task).Do()
-	if err != nil {
-		http.Error(w, "Failed to create task", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-}
-
-func handleCompleteTask(w http.ResponseWriter, r *http.Request) {
-	var req struct {
-		TaskId string `json:"task_id"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid request body", http.StatusBadRequest)
-		return
-	}
-
-	task, err := taskService.Tasks.Get("@default", req.TaskId).Do()
-	if err != nil {
-		http.Error(w, "Failed to fetch task", http.StatusInternalServerError)
-		return
-	}
-	task.Status = "completed"
-	_, err = taskService.Tasks.Update("@default", task.Id, task).Do()
-	if err != nil {
-		http.Error(w, "Failed to mark task as complete", http.StatusInternalServerError)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
 }
