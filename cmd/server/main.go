@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/bmolinari/google-tasks-widget/internal/api"
 	"google.golang.org/api/tasks/v1"
@@ -28,8 +29,17 @@ func main() {
 	http.HandleFunc("/tasks/create", handleCreateTask)
 	http.HandleFunc("/tasks/complete", handleCompleteTask)
 
+	port := getServerPort()
 	log.Println("Server is running on http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	log.Fatal(http.ListenAndServe(":"+port, nil))
+}
+
+func getServerPort() string {
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	return port
 }
 
 func handleGetTasks(w http.ResponseWriter, r *http.Request) {
